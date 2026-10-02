@@ -203,6 +203,23 @@ def cmd_unpair(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_appletv_pair(args: argparse.Namespace) -> int:
+    """Pair with an Apple TV or HomePod (interactive PIN entry)."""
+    try:
+        from musegadget import hometheater
+    except ImportError as exc:
+        print(f"Can't pair: {exc}.", file=sys.stderr)
+        return 1
+    try:
+        result = hometheater.pair_apple_tv(args.target, args.protocol)
+    except hometheater.HomeTheaterError as exc:
+        print(f"Pairing failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Paired with {result['device']} over {result['protocol']}; "
+          "credentials saved.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="musegadget")
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -230,6 +247,15 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("info", help="show device identity").set_defaults(func=cmd_info)
     sub.add_parser("unpair", help="forget the saved pairing").set_defaults(func=cmd_unpair)
+
+    apair = sub.add_parser("appletv-pair",
+                           help="pair with an Apple TV or HomePod (PIN entry)")
+    apair.add_argument("--target", required=True,
+                       help="hostname, IP, or device name to pair with")
+    apair.add_argument("--protocol", default="Companion",
+                       choices=["Companion", "AirPlay"],
+                       help="pairing protocol (default: %(default)s)")
+    apair.set_defaults(func=cmd_appletv_pair)
 
     args = parser.parse_args(argv)
     logging.basicConfig(

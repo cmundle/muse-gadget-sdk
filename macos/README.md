@@ -106,6 +106,66 @@ Ask Muse things like:
 
 > Every morning at 7, check if my Mac's backups ran and tell me if they didn't.
 
+## Home theater
+
+This Mac can also drive the home theater on your LAN: Apple TV, HomePod mini
+(via pyatv), and Sonos speakers (via SoCo). These are optional: install them
+with:
+
+```sh
+pip install "musegadget[hometheater]"
+```
+
+or `pip install pyatv soco` directly. Without them, the commands below fail
+with a clear message telling you what to install.
+
+| Command | What it does |
+|---|---|
+| `appletv.remote_key` | Press a remote key: menu, select, play_pause, up/down/left/right, home, next, previous, wakeup, suspend |
+| `appletv.app_list` | List installed apps (name and identifier) |
+| `appletv.launch_app` | Launch an app by name or identifier |
+| `appletv.text_entry` | Type into the focused text field (fails cleanly when nothing is focused) |
+| `appletv.power` | Sleep or wake the Apple TV |
+| `homepod.volume` | Get or set volume (0-100); reads back afterwards |
+| `homepod.transport` | play, pause, next, previous on the existing session |
+| `homepod.group` | Join, unjoin, or set the output speaker group |
+| `sonos.status` | Transport state, current track, volume/mute, group members |
+| `sonos.volume` / `sonos.mute` | Volume and mute per room |
+| `sonos.transport` | play, pause, stop, next, previous, seek on the group coordinator |
+| `sonos.group` | Join or unjoin rooms |
+
+Every command takes an optional `target`: a hostname, IP, or device name for
+Apple TV / HomePod, and a room name for Sonos. When omitted, the gadget uses
+the paired device, or the only device it finds. (A future `devices.json` in
+the state dir may map friendly names to addresses; for now, pass explicit
+values.)
+
+### Pairing Apple TV / HomePod
+
+pyatv needs pairing credentials for the Companion (and optionally AirPlay)
+protocol. Pair once from a terminal on this Mac:
+
+```sh
+musegadget appletv-pair --target <hostname-or-IP>
+```
+
+Enter the PIN shown on the TV when asked. Credentials are saved to
+`home_theater_credentials.json` in the state dir (owner-only, 0600), keyed by
+the target you paired with. Re-run for each protocol you need.
+
+### Limits
+
+These follow the community device skills' constraints:
+
+- HomePod transport only controls an *existing* session. It cannot start a
+  new audio stream, and `play_url` is never offered for HomePod.
+- No `play_url` on tvOS either, no screenshots, no account switching.
+- No Siri/Intercom and no Home configuration access.
+- Sonos grouping resolves each room's group coordinator from zone topology
+  before acting, and state is polled after every action. Group changes affect
+  other rooms. Bonded stereo or home-theater pairs should be left grouped as
+  they are.
+
 ## Hack and extend it
 
 Programs on the machine can send messages to Muse, with no credentials of

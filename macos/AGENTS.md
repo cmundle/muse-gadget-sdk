@@ -14,7 +14,7 @@ pairing and control protocols, so the same app pairs any of them.
 
 | Module | Role |
 |---|---|
-| `cli.py` | `musegadget pair`, `run`, `send-user-msg`, `info`, `unpair` |
+| `cli.py` | `musegadget pair`, `run`, `send-user-msg`, `info`, `unpair`, `appletv-pair` |
 | `pairing.py` | Community pairing v5: P-256 ECDH, HKDF-SHA256, AES-256-GCM, `confirm_app` |
 | `ble_framing.py` | Chunked BLE framing (`0xFE`, index, total, payload) |
 | `ble_setup.py` | Setup commands behind the GATT characteristics (transport-agnostic) |
@@ -24,6 +24,7 @@ pairing and control protocols, so the same app pairs any of them.
 | `link_client.py` | One session: `/v1/noise` upgrade, Noise XX, `/link-control`, `/chat/stream` |
 | `service.py` | `musegadget run`: reconnect loop, token rotation, local socket |
 | `executor.py`, `fileops.py` | The commands Muse can run, as the installing user |
+| `hometheater.py` | Apple TV / HomePod (pyatv) and Sonos (SoCo) commands; optional deps, lazy imports |
 | `config.py` | State dir, socket path, SDK token (macOS locations) |
 | `network.py` | Connectivity checks; Wi-Fi SSID via `networksetup` on macOS |
 | `noise/` | Noise XX handshake, framing and service envelopes |

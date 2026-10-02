@@ -37,6 +37,10 @@ musegadget = "musegadget.cli:main"
 
 [project.optional-dependencies]
 test = ["pytest"]
+# Optional: home theater control. pyatv drives Apple TV and HomePod mini;
+# SoCo drives Sonos speakers over UPnP. Installed separately so the core
+# gadget works without them.
+hometheater = ["pyatv>=0.14", "soco>=0.30"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
