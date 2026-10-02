@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Muse Home Link (macOS Device SDK) — per-user LaunchAgent.
+
+    Installed by install.sh but NOT loaded by default: start with
+    `musegadget run` in the terminal first. Once pairing is stable, enable
+    the background service with:
+
+        launchctl load -w ~/Library/LaunchAgents/com.muse.gadget.plist
+
+    The installer rewrites @PREFIX@ to the install prefix (usually
+    /opt/musegadget).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.muse.gadget</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>@PREFIX@/venv/bin/musegadget</string>
+        <string>run</string>
+    </array>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>@HOME@/Library/Logs/musegadget.log</string>
+    <key>StandardErrorPath</key>
+    <string>@HOME@/Library/Logs/musegadget.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
+</dict>
+</plist>
