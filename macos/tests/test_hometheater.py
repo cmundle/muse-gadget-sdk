@@ -20,6 +20,7 @@ fakes into sys.modules instead of requiring the real libraries.
 
 from __future__ import annotations
 
+import asyncio
 import sys
 import types
 
@@ -674,3 +675,89 @@ def test_credential_round_trip(tmp_path, monkeypatch):
     import os, stat
     mode = stat.S_IMODE(os.stat(tmp_path / "home_theater_credentials.json").st_mode)
     assert mode == 0o600
+# -- Pairing backoff ---------------------------------------------------------------
+
+def _patch_pair_interactive(monkeypatch, tmp_path, fake_pyatv, begin_behavior):
+    """Common setup for pair_apple_tv tests: temp state dir, PIN 1234, no sleeps."""
+    from musegadget import config as config_mod
+    monkeypatch.setattr(config_mod, "state_dir", lambda: tmp_path)
+    monkeypatch.setattr("builtins.input", lambda *args, **kwargs: "1234")
+
+    sleeps = []
+
+    async def fake_sleep(delay):
+        sleeps.append(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+    real_pair = fake_pyatv.pair
+    attempts = {"begin": 0, "pair": 0}
+
+    async def patched_pair(config, protocol, loop, session=None, storage=None,
+                           **kwargs):
+        attempts["pair"] += 1
+        pairing = await real_pair(config, protocol, loop)
+
+        async def begin():
+            attempts["begin"] += 1
+            await begin_behavior(attempts["begin"], pairing)
+
+        pairing.begin = begin
+        return pairing
+
+    fake_pyatv.pair = patched_pair
+    return attempts, sleeps
+
+
+def test_pair_apple_tv_retries_on_backoff(fake_pyatv, monkeypatch, tmp_path):
+    """begin() BackOff answers are honored: wait, then retry with a fresh handler."""
+
+    async def behavior(n, pairing):
+        if n < 3:
+            raise Exception("Error=BackOff, BackOff=1s, SeqNo=M2")
+        pairing.started = True
+
+    attempts, sleeps = _patch_pair_interactive(
+        monkeypatch, tmp_path, fake_pyatv, behavior)
+
+    result = hometheater.pair_apple_tv("192.168.68.84")
+
+    assert result == {"paired": True, "device": "Living Room TV",
+                      "protocol": "Companion"}
+    assert attempts["begin"] == 3
+    assert attempts["pair"] == 3  # fresh handler per attempt
+    assert sleeps == [2, 2]  # BackOff=1s plus a 1s margin, twice
+    loaded = hometheater._load_credentials()
+    assert loaded["192.168.68.84"]["Companion"] == "fake-credentials"
+
+
+def test_pair_apple_tv_does_not_retry_other_errors(fake_pyatv, monkeypatch,
+                                                   tmp_path):
+    """Non-throttle failures from begin() surface immediately, no retries."""
+
+    async def behavior(n, pairing):
+        raise Exception("Error=NotPaired")
+
+    attempts, sleeps = _patch_pair_interactive(
+        monkeypatch, tmp_path, fake_pyatv, behavior)
+
+    with pytest.raises(Exception, match="NotPaired"):
+        hometheater.pair_apple_tv("192.168.68.84")
+    assert attempts["begin"] == 1
+    assert sleeps == []
+
+
+def test_pair_apple_tv_gives_up_after_max_backoffs(fake_pyatv, monkeypatch,
+                                                   tmp_path):
+    """Persistent throttling eventually raises instead of looping forever."""
+
+    async def behavior(n, pairing):
+        raise Exception("Error=BackOff, BackOff=1s, SeqNo=M2")
+
+    attempts, sleeps = _patch_pair_interactive(
+        monkeypatch, tmp_path, fake_pyatv, behavior)
+
+    with pytest.raises(Exception, match="BackOff"):
+        hometheater.pair_apple_tv("192.168.68.84")
+    assert attempts["begin"] == hometheater._PAIR_BEGIN_ATTEMPTS
+    assert sleeps == [2] * (hometheater._PAIR_BEGIN_ATTEMPTS - 1)

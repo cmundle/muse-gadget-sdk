@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 
 from musegadget import config
 
@@ -48,6 +49,8 @@ log = logging.getLogger(__name__)
 
 _CREDENTIALS_FILE = "home_theater_credentials.json"
 _SCAN_TIMEOUT_S = 8
+_PAIR_BEGIN_ATTEMPTS = 5
+_BACKOFF_RE = re.compile(r"BackOff=(\d+)\s*s", re.IGNORECASE)
 
 
 class HomeTheaterError(Exception):
@@ -553,6 +556,40 @@ def sonos_group(params: dict) -> dict:
 
 # -- Pairing ---------------------------------------------------------------------
 
+async def _begin_pairing_with_backoff(pyatv, config, protocol, loop,
+                                      attempts: int = _PAIR_BEGIN_ATTEMPTS):
+    """Create a pairing handler and begin it, honoring BackOff throttles.
+
+    Apple TVs answer ``begin()`` with ``Error=BackOff, BackOff=Ns`` when
+    pairing attempts arrive too fast (e.g. a previous attempt was abandoned
+    mid-handshake). Wait out the requested backoff and retry with a fresh
+    handler instead of failing with a traceback.
+    """
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        pairing = await pyatv.pair(config, protocol, loop)
+        try:
+            await pairing.begin()
+            return pairing
+        except Exception as exc:
+            last_error = exc
+            try:
+                await pairing.close()
+            except Exception:
+                log.debug("error closing throttled pairing handler",
+                          exc_info=True)
+            backoff = _BACKOFF_RE.search(str(exc))
+            if backoff is None or attempt == attempts:
+                raise
+            wait_s = int(backoff.group(1)) + 1  # small margin on the ask
+            log.info("pairing throttled, retrying in %ds (attempt %d/%d)",
+                     wait_s, attempt, attempts)
+            print(f"Device asked us to wait {wait_s}s before retrying "
+                  f"(attempt {attempt}/{attempts})...")
+            await asyncio.sleep(wait_s)
+    raise last_error  # unreachable: the loop always returns or raises
+
+
 def pair_apple_tv(target: str, protocol: str = "Companion") -> dict:
     """Pair with an Apple TV or HomePod over the LAN (interactive).
 
@@ -578,9 +615,9 @@ def pair_apple_tv(target: str, protocol: str = "Companion") -> dict:
             raise DeviceNotFound(
                 f"no Apple TV or HomePod found matching {target!r}")
         cfg = configs[0]
-        pairing = await pyatv.pair(cfg, protocol_obj, loop)
+        pairing = await _begin_pairing_with_backoff(
+            pyatv, cfg, protocol_obj, loop)
         try:
-            await pairing.begin()
             pin = input("Enter the PIN shown on the device: ").strip()
             pairing.pin(pin)
             await pairing.finish()
