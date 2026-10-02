@@ -97,6 +97,158 @@ COMMAND_SPECS = {
         "required": {},
         "optional": {},
     },
+    "appletv.remote_key": {
+        "description": (
+            "Press a remote key on the Apple TV: menu, select, play_pause, play, "
+            "pause, up, down, left, right, home, next, previous, wakeup, suspend. "
+            "Reports the key sent; success does not guarantee the on-screen outcome."
+        ),
+        "required": {
+            "key": {"type": "string", "description": "Remote key to press."},
+        },
+        "optional": {
+            "target": {"type": "string", "description": "Apple TV hostname, IP, or name. Uses the paired Apple TV when omitted."},
+        },
+        "timeout_ms": 60000,
+    },
+    "appletv.app_list": {
+        "description": "List installed apps on the Apple TV (name and identifier).",
+        "required": {},
+        "optional": {
+            "target": {"type": "string", "description": "Apple TV hostname, IP, or name. Uses the paired Apple TV when omitted."},
+        },
+        "timeout_ms": 60000,
+    },
+    "appletv.launch_app": {
+        "description": "Launch an installed app on the Apple TV by name or identifier (see appletv.app_list).",
+        "required": {
+            "app": {"type": "string", "description": "App name or bundle identifier."},
+        },
+        "optional": {
+            "target": {"type": "string", "description": "Apple TV hostname, IP, or name. Uses the paired Apple TV when omitted."},
+        },
+        "timeout_ms": 60000,
+    },
+    "appletv.text_entry": {
+        "description": "Type text into the focused text field on the Apple TV. Fails cleanly when no text field is focused.",
+        "required": {
+            "text": {"type": "string", "description": "Text to type."},
+        },
+        "optional": {
+            "target": {"type": "string", "description": "Apple TV hostname, IP, or name. Uses the paired Apple TV when omitted."},
+        },
+        "timeout_ms": 60000,
+    },
+    "appletv.power": {
+        "description": "Sleep or wake the Apple TV. Waking may also wake a connected display over HDMI-CEC.",
+        "required": {
+            "action": {"type": "string", "description": "'sleep' or 'wake'."},
+        },
+        "optional": {
+            "target": {"type": "string", "description": "Apple TV hostname, IP, or name. Uses the paired Apple TV when omitted."},
+        },
+        "timeout_ms": 60000,
+    },
+    "homepod.volume": {
+        "description": (
+            "Get or set the HomePod mini volume (0-100). With level or step, sets "
+            "then reads back; some firmware acknowledges without changing, so the "
+            "read-back value is authoritative."
+        ),
+        "required": {},
+        "optional": {
+            "target": {"type": "string", "description": "HomePod room or name. Uses the paired HomePod when omitted."},
+            "level": {"type": "integer", "description": "Volume 0-100."},
+            "step": {"type": "integer", "description": "Relative change, e.g. 5 or -5. Ignored when level is given."},
+        },
+        "timeout_ms": 60000,
+    },
+    "homepod.transport": {
+        "description": (
+            "Control playback on the HomePod mini: play, pause, next, previous. "
+            "Only works on an existing session; it cannot start a new audio stream."
+        ),
+        "required": {
+            "action": {"type": "string", "description": "play, pause, next, or previous."},
+        },
+        "optional": {
+            "target": {"type": "string", "description": "HomePod room or name. Uses the paired HomePod when omitted."},
+        },
+        "timeout_ms": 60000,
+    },
+    "homepod.group": {
+        "description": (
+            "Change the HomePod mini output group: join, unjoin, or set the "
+            "speaker set by name. Confirms group membership afterwards. "
+            "Group changes affect other rooms."
+        ),
+        "required": {
+            "action": {"type": "string", "description": "'join', 'unjoin', or 'set'."},
+            "speakers": {"type": "array", "description": "Speaker names to join, unjoin, or set."},
+        },
+        "optional": {
+            "target": {"type": "string", "description": "HomePod room or name. Uses the paired HomePod when omitted."},
+        },
+        "timeout_ms": 60000,
+    },
+    "sonos.status": {
+        "description": "Sonos room status: transport state, current track, volume/mute, and group members.",
+        "required": {
+            "room": {"type": "string", "description": "Room name."},
+        },
+        "optional": {},
+        "timeout_ms": 60000,
+    },
+    "sonos.volume": {
+        "description": "Set Sonos room volume (0-100) or adjust by step; reads back afterwards.",
+        "required": {
+            "room": {"type": "string", "description": "Room name."},
+        },
+        "optional": {
+            "level": {"type": "integer", "description": "Volume 0-100."},
+            "step": {"type": "integer", "description": "Relative change. Ignored when level is given."},
+        },
+        "timeout_ms": 60000,
+    },
+    "sonos.mute": {
+        "description": "Mute or unmute a Sonos room.",
+        "required": {
+            "room": {"type": "string", "description": "Room name."},
+            "muted": {"type": "boolean", "description": "True to mute, false to unmute."},
+        },
+        "optional": {},
+        "timeout_ms": 60000,
+    },
+    "sonos.transport": {
+        "description": (
+            "Sonos transport for a room's group: play, pause, stop, next, "
+            "previous, or seek. Acts on the group coordinator, resolved from "
+            "zone topology."
+        ),
+        "required": {
+            "room": {"type": "string", "description": "Room name."},
+            "action": {"type": "string", "description": "play, pause, stop, next, previous, or seek."},
+        },
+        "optional": {
+            "position": {"type": "string", "description": "For seek: position as seconds or HH:MM:SS."},
+        },
+        "timeout_ms": 60000,
+    },
+    "sonos.group": {
+        "description": (
+            "Group Sonos rooms: join rooms into a group or unjoin them. "
+            "Resolves each room's group coordinator from zone topology first. "
+            "Reports membership afterwards. Grouping affects other rooms."
+        ),
+        "required": {
+            "action": {"type": "string", "description": "'join' or 'unjoin'."},
+            "rooms": {"type": "array", "description": "Room names to join into (or remove from) the group."},
+        },
+        "optional": {
+            "group_with": {"type": "string", "description": "For join: room whose group to join. Defaults to the first room listed."},
+        },
+        "timeout_ms": 60000,
+    },
 }
 
 
@@ -138,10 +290,33 @@ class Executor:
                 return self.file_op(command.split(".")[1], params)
             if command == "device.health":
                 return ok(device_health())
+            if command.startswith("appletv."):
+                return self._home_theater("appletv", command, params)
+            if command.startswith("homepod."):
+                return self._home_theater("homepod", command, params)
+            if command.startswith("sonos."):
+                return self._home_theater("sonos", command, params)
         except Exception as exc:
             log.exception("%s failed", command)
             return error(f"{type(exc).__name__}: {exc}")
         return error(f"unsupported command: {command}")
+
+    def _home_theater(self, family: str, command: str, params: dict) -> dict:
+        """Dispatch appletv.*/homepod.*/sonos.* to musegadget.hometheater."""
+        from musegadget import hometheater
+
+        sub = command.split(".", 1)[1]
+        try:
+            if family == "appletv":
+                payload = hometheater.run_appletv(sub, params)
+            elif family == "homepod":
+                payload = hometheater.run_homepod(sub, params)
+            else:
+                payload = hometheater.run_sonos(sub, params)
+        except hometheater.HomeTheaterError as exc:
+            # Clean, user-facing message without an exception-class prefix.
+            return error(str(exc))
+        return ok(payload)
 
     # -- Child processes ------------------------------------------------------
 
