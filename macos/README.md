@@ -33,7 +33,7 @@ command.
 On the Mac, as the account Muse should use:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/facebookincubator/muse-gadget-sdk/main/macos/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/cmundle/muse-gadget-sdk/macos-port/macos/install.sh -o install.sh
 less install.sh # read it first
 bash install.sh --sdk-token mgst_…
 ```
@@ -83,6 +83,7 @@ LaunchAgent so it starts at login:
 
 ```sh
 launchctl load -w ~/Library/LaunchAgents/com.muse.gadget.plist
+launchctl start com.muse.gadget
 tail -f ~/Library/Logs/musegadget.log
 ```
 

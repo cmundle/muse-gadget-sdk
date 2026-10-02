@@ -36,7 +36,9 @@ SYMLINK="/usr/local/bin/musegadget"
 PLIST_NAME="com.muse.gadget.plist"
 PLIST="$HOME/Library/LaunchAgents/$PLIST_NAME"
 STATE_DIR="$HOME/Library/Application Support/musegadget"
-DEFAULT_SOURCE="git+https://github.com/facebookincubator/muse-gadget-sdk@main#subdirectory=macos"
+# NOTE: upstream has no macos/ directory yet; this points at the fork
+# where the port lives. Re-point if upstream ever merges it.
+DEFAULT_SOURCE="git+https://github.com/cmundle/muse-gadget-sdk@macos-port#subdirectory=macos"
 
 say() { printf '\033[1m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[33mwarning:\033[0m %s\n' "$*" >&2; }
