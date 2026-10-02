@@ -53,11 +53,17 @@ TX_UUID = "d75dc4ca-7b2b-4e9c-8f0a-1d2e3f4a5b6c"
 # running the Muse app negotiate at least this.
 _ASSUMED_MTU = MAX_PACKET_BYTES + 3
 
+# Manufacturer data the apps read as the device's paired flag, identical to
+# the Linux server: unassigned company id 0xFFFF (little-endian) followed by
+# a single flag byte. Informational, not authenticated.
+_MANUFACTURER_DATA = bytes((0xFF, 0xFF, 0x00))
+
 try:
     import objc
     from CoreBluetooth import (
         CBATTErrorSuccess,
         CBAdvertisementDataLocalNameKey,
+        CBAdvertisementDataManufacturerDataKey,
         CBAdvertisementDataServiceUUIDsKey,
         CBAttributePermissionsReadable,
         CBAttributePermissionsWriteable,
@@ -116,6 +122,9 @@ if _HAVE_CORE_BLUETOOTH:
                     CBAdvertisementDataServiceUUIDsKey: [
                         CBUUID.UUIDWithString_(SERVICE_UUID)
                     ],
+                    CBAdvertisementDataManufacturerDataKey: NSData.dataWithBytes_length_(
+                        _MANUFACTURER_DATA, len(_MANUFACTURER_DATA)
+                    ),
                 }
             )
 
