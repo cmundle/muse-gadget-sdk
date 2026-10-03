@@ -118,8 +118,9 @@ musegadget appletv-pair --target 192.168.68.62
 
 ## Suggested next steps (in order)
 
-1. Apple TV is paired (.62). Exercise `appletv.remote_key`, `app_list`,
-   `launch_app` against the real TV.
+1. Apple TV is paired (.62). `appletv.launch_app` (YouTube) verified on
+   the real TV 2026-10-03. Still to confirm: `app_list`, `remote_key`,
+   `text_entry`, `power`.
 2. BLE: test whether the Muse app needs manufacturer data. CoreBluetooth
    can only advertise a local name and service UUIDs (Apple's
    `startAdvertising` docs), while Linux and ESP32 send company `0xFFFF`
@@ -127,8 +128,10 @@ musegadget appletv-pair --target 192.168.68.62
    Advertiser with the service UUID and name, once without and once with
    manufacturer data `0xFFFF` / `00`. Also check whether nRF shows the
    full `MuseGadgetXXXXXX` name (CoreBluetooth allows only 10 bytes for
-   the name in the scan response). Then draft the upstream issue (file
-   only with the owner's approval).
+   the name in the scan response). The owner has no Android device, so
+   this control test is not possible for now; an upstream issue draft
+   (posted in the project thread 2026-10-03) asks Meta to confirm the
+   app's scan filter instead. File only with the owner's approval.
 3. Sonos: hardware-test `sonos.*` commands where Sonos speakers are on the
    LAN (they were not on the test network).
 4. When `pair` + `run` are stable in the foreground: load the LaunchAgent
