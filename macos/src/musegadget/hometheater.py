@@ -65,6 +65,10 @@ class DeviceNotFound(HomeTheaterError):
     """No matching device found on the local network."""
 
 
+class PairingCancelled(HomeTheaterError):
+    """The user cancelled interactive pairing (Ctrl-C or end of input)."""
+
+
 # -- Optional dependencies ---------------------------------------------------
 
 def _require_pyatv():
@@ -590,6 +594,41 @@ async def _begin_pairing_with_backoff(pyatv, config, protocol, loop,
     raise last_error  # unreachable: the loop always returns or raises
 
 
+def _check_pairable(cfg, protocol_obj, protocol: str) -> None:
+    """Fail fast when the scan says the device can't pair over ``protocol``.
+
+    HomePods list Companion with ``Pairing: Unsupported`` and never answer
+    the first pairing message, so beginning anyway only ends in a timeout.
+    """
+    get_service = getattr(cfg, "get_service", None)
+    if get_service is None:
+        return
+    service = get_service(protocol_obj)
+    name = cfg.name or cfg.address
+    if service is None:
+        raise HomeTheaterError(
+            f"{name} doesn't offer {protocol}. "
+            "Run `atvremote scan` to find the Apple TV's address.")
+    requirement = getattr(getattr(service, "pairing", None), "name", None)
+    if requirement == "Unsupported":
+        raise HomeTheaterError(
+            f"{name} doesn't support {protocol} pairing. It's probably a "
+            "HomePod, which needs no pairing. Run `atvremote scan` to find "
+            "the Apple TV's address.")
+
+
+def _read_pin() -> str:
+    """Prompt for the PIN; Ctrl-C or end of input cancels pairing."""
+    try:
+        pin = input("Enter the PIN shown on the device: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print()  # end the prompt line
+        raise PairingCancelled("pairing cancelled") from None
+    if not pin:
+        raise PairingCancelled("no PIN entered, pairing cancelled")
+    return pin
+
+
 def pair_apple_tv(target: str, protocol: str = "Companion") -> dict:
     """Pair with an Apple TV or HomePod over the LAN (interactive).
 
@@ -615,10 +654,11 @@ def pair_apple_tv(target: str, protocol: str = "Companion") -> dict:
             raise DeviceNotFound(
                 f"no Apple TV or HomePod found matching {target!r}")
         cfg = configs[0]
+        _check_pairable(cfg, protocol_obj, protocol)
         pairing = await _begin_pairing_with_backoff(
             pyatv, cfg, protocol_obj, loop)
         try:
-            pin = input("Enter the PIN shown on the device: ").strip()
+            pin = _read_pin()
             pairing.pin(pin)
             await pairing.finish()
             if not pairing.has_paired:

@@ -761,3 +761,110 @@ def test_pair_apple_tv_gives_up_after_max_backoffs(fake_pyatv, monkeypatch,
         hometheater.pair_apple_tv("192.168.68.84")
     assert attempts["begin"] == hometheater._PAIR_BEGIN_ATTEMPTS
     assert sleeps == [2] * (hometheater._PAIR_BEGIN_ATTEMPTS - 1)
+
+
+# -- Pairing: cancel and unpairable targets ------------------------------------------
+
+def _pair_setup(monkeypatch, tmp_path, fake_pyatv, pin_input):
+    from musegadget import config as config_mod
+    monkeypatch.setattr(config_mod, "state_dir", lambda: tmp_path)
+    monkeypatch.setattr("builtins.input", pin_input)
+    closed = []
+    real_pair = fake_pyatv.pair
+
+    async def patched_pair(config, protocol, loop, session=None, storage=None,
+                           **kwargs):
+        pairing = await real_pair(config, protocol, loop)
+
+        async def close():
+            closed.append(True)
+
+        pairing.close = close
+        return pairing
+
+    fake_pyatv.pair = patched_pair
+    return closed
+
+
+@pytest.mark.parametrize("exc", [KeyboardInterrupt, EOFError])
+def test_pair_apple_tv_cancel_at_pin_prompt(fake_pyatv, monkeypatch, tmp_path,
+                                            exc):
+    """Ctrl-C or end of input at the PIN prompt cancels cleanly and closes."""
+
+    def pin_input(*args, **kwargs):
+        raise exc
+
+    closed = _pair_setup(monkeypatch, tmp_path, fake_pyatv, pin_input)
+    with pytest.raises(hometheater.PairingCancelled):
+        hometheater.pair_apple_tv("192.168.68.62")
+    assert closed == [True]
+    assert hometheater._load_credentials() == {}
+
+
+def test_pair_apple_tv_empty_pin_cancels(fake_pyatv, monkeypatch, tmp_path):
+    closed = _pair_setup(monkeypatch, tmp_path, fake_pyatv,
+                         lambda *a, **k: "  ")
+    with pytest.raises(hometheater.PairingCancelled, match="no PIN"):
+        hometheater.pair_apple_tv("192.168.68.62")
+    assert closed == [True]
+
+
+class _FakePairingRequirement:
+    def __init__(self, name):
+        self.name = name
+
+
+class _FakeScanService:
+    def __init__(self, pairing):
+        self.pairing = _FakePairingRequirement(pairing)
+
+
+def test_pair_apple_tv_rejects_unsupported_pairing(fake_pyatv, monkeypatch,
+                                                   tmp_path):
+    """A HomePod lists Companion as Unsupported: fail before begin()."""
+    cfg = fake_pyatv.FakeConfig(name="Bedroom (2)", address="192.168.68.84")
+    cfg.get_service = lambda protocol: _FakeScanService("Unsupported")
+    fake_pyatv.state["configs"] = [cfg]
+    began = []
+
+    async def pair(*args, **kwargs):
+        began.append(True)
+
+    fake_pyatv.pair = pair
+    with pytest.raises(hometheater.HomeTheaterError, match="HomePod"):
+        hometheater.pair_apple_tv("192.168.68.84")
+    assert began == []
+
+
+def test_pair_apple_tv_rejects_missing_protocol(fake_pyatv):
+    cfg = fake_pyatv.FakeConfig(name="Kitchen")
+    cfg.get_service = lambda protocol: None
+    fake_pyatv.state["configs"] = [cfg]
+    with pytest.raises(hometheater.HomeTheaterError, match="doesn't offer"):
+        hometheater.pair_apple_tv("10.0.0.10")
+
+
+def test_pair_apple_tv_allows_mandatory_pairing(fake_pyatv, monkeypatch,
+                                                tmp_path):
+    cfg = fake_pyatv.FakeConfig(name="Bedroom", address="192.168.68.62")
+    cfg.get_service = lambda protocol: _FakeScanService("Mandatory")
+    fake_pyatv.state["configs"] = [cfg]
+    _pair_setup(monkeypatch, tmp_path, fake_pyatv, lambda *a, **k: "1234")
+    result = hometheater.pair_apple_tv("192.168.68.62")
+    assert result["paired"] is True
+
+
+@pytest.mark.parametrize("exc", [hometheater.PairingCancelled("pairing cancelled"),
+                                 KeyboardInterrupt()])
+def test_cli_appletv_pair_cancel_exits_quietly(monkeypatch, capsys, exc):
+    from musegadget import cli
+
+    def fake_pair(target, protocol):
+        raise exc
+
+    monkeypatch.setattr(hometheater, "pair_apple_tv", fake_pair)
+    rc = cli.main(["appletv-pair", "--target", "192.168.68.62"])
+    assert rc == 130
+    err = capsys.readouterr().err
+    assert "Pairing cancelled." in err
+    assert "Traceback" not in err

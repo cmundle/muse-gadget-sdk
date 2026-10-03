@@ -212,6 +212,9 @@ def cmd_appletv_pair(args: argparse.Namespace) -> int:
         return 1
     try:
         result = hometheater.pair_apple_tv(args.target, args.protocol)
+    except (hometheater.PairingCancelled, KeyboardInterrupt):
+        print("Pairing cancelled.", file=sys.stderr)
+        return 130
     except hometheater.HomeTheaterError as exc:
         print(f"Pairing failed: {exc}", file=sys.stderr)
         return 1

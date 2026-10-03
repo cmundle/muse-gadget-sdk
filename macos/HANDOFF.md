@@ -4,7 +4,7 @@
 **Branch:** `macos-port` on `github.com/cmundle/muse-gadget-sdk` (fork of
 `facebookincubator/muse-gadget-sdk`)
 **Head:** `4b5d3dca` — "Port upstream: request text replies in send_chat"
-**Tests:** 174 passing (`python3 -m pytest` from `macos/`)
+**Tests:** 182 passing (`python3 -m pytest` from `macos/`)
 
 This is the working state for a new agent picking up the project. Read
 `AGENTS.md` first for architecture and conventions, then this file for
@@ -70,32 +70,23 @@ Environment notes for retesting: activate the venv first
 `MUSEGADGET_SDK_TOKEN` in each new shell (it is shell-local). Pairing
 credentials are per machine.
 
-## Open investigation 2: Apple TV Companion pairing times out on tvOS 27
+## Resolved: Apple TV Companion pairing "timeout"
 
-**Status:** In progress. Blocked on the device side, not the code.
+**Status:** Resolved 2026-10-03. Not a tvOS bug.
 
-- Target: bedroom Apple TV at `192.168.68.84` (tvOS 27), with HomePods as
-  its audio output. (Sam's Apple TV at `.53` is not accessible to the owner;
-  use `.84`.)
-- First attempts got `Error=BackOff` from the TV; the retry fix
-  (`befc2c3b`) resolved that.
-- Current failure: `pyatv.exceptions.ConnectionFailedError` caused by
-  `asyncio.TimeoutError` in `exchange_auth` — the TV does not answer the
-  first Companion pairing message. The TV is confirmed awake and on the
-  home screen.
-- Ruled out: pyatv version (0.18.0 installed, current, confirmed working
-  with tvOS 27 elsewhere), TV asleep.
-- Known tvOS 27 quirks (pyatv issues #2866, #2894): Companion pairing is
-  the working path; AirPlay PIN pairing is broken on tvOS 27 (no PIN
-  shown). Do not switch to `--protocol AirPlay` expecting it to work.
-- Hypotheses still open: the TV's pairing service is wedged from the
-  earlier throttled attempts (try Settings → System → Restart); the TV's
-  Settings → Remotes and Devices → Remote App and Devices may not allow
-  new pairings; or tvOS 27 changed something in the handshake pyatv
-  0.18.0 does not handle.
-- Control test: pair the owner's iPhone as a remote to that TV. If the
-  iPhone fails too, it is the TV. If the iPhone works, dig into pyatv's
-  Companion handshake.
+- `192.168.68.84` is a HomePod ("Bedroom (2)", `AudioAccessory1,1`), not
+  the Apple TV. Its scan lists Companion as `Pairing: Unsupported`, so it
+  never answers the first pairing message. HomePods need no pairing (RAOP
+  `NotNeeded`); use `.84` for `homepod.*` commands only.
+- The bedroom Apple TV is `192.168.68.62` ("Bedroom", Apple TV 4K gen 2,
+  `AppleTV11,1`, tvOS 27.0, Companion `Pairing: Mandatory`). Companion
+  pairing reaches the PIN prompt there.
+- `appletv-pair` now checks the scan before pairing and stops with a clear
+  message when the target doesn't offer or can't pair over the protocol.
+  Ctrl-C, end of input or an empty PIN at the prompt cancel cleanly (exit
+  130, no traceback) and close the pairing session.
+- Known tvOS 27 quirk still applies (pyatv issues #2866, #2894): use
+  Companion; AirPlay PIN pairing shows no PIN on tvOS 27.
 
 ## Constraints (do not violate)
 
@@ -121,14 +112,13 @@ cd ~/GitHub/muse-gadget-sdk/macos
 source .venv/bin/activate
 pip install -e ".[hometheater]"   # pyatv + soco, optional
 python3 -m pytest                  # full suite, no hardware needed
-musegadget appletv-pair --target 192.168.68.84
+musegadget appletv-pair --target 192.168.68.62
 ```
 
 ## Suggested next steps (in order)
 
-1. Apple TV pairing: restart the bedroom Apple TV, retry `appletv-pair`.
-   If still wedged, run the iPhone control test, then investigate pyatv's
-   Companion handshake against tvOS 27.
+1. Apple TV pairing: finish `appletv-pair --target 192.168.68.62` with the
+   PIN shown on the TV.
 2. Once Apple TV pairs: exercise `appletv.remote_key`, `app_list`,
    `launch_app` against the real TV.
 3. BLE: reconfirm nRF visibility on current head, then draft the upstream
