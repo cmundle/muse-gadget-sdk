@@ -71,6 +71,7 @@ def _verify_and_save(credentials: Credentials, commit: Callable[[Callable[[], bo
 def cmd_pair(args: argparse.Namespace) -> int:
     try:
         from musegadget.ble_server_macos import BleServerMacOS as BleServer
+        from musegadget.ble_server_macos import SERVICE_UUID
     except ImportError as exc:
         print(f"Can't pair: {exc}.", file=sys.stderr)
         print("Bluetooth pairing needs macOS with PyObjC CoreBluetooth installed.",
@@ -125,6 +126,8 @@ def cmd_pair(args: argparse.Namespace) -> int:
 
     print(f"Setup open for {args.timeout // 60} minutes. In the Muse app, add a device")
     print(f"and choose {ident.ble_name}.")
+    print(f"Bluetooth name:         {ident.ble_name}")
+    print(f"Bluetooth service UUID: {SERVICE_UUID}")
     controller.start()
     window.start()
     try:
