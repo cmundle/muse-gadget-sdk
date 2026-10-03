@@ -868,3 +868,27 @@ def test_cli_appletv_pair_cancel_exits_quietly(monkeypatch, capsys, exc):
     err = capsys.readouterr().err
     assert "Pairing cancelled." in err
     assert "Traceback" not in err
+
+
+def test_pair_apple_tv_saves_ipaddress_as_text(fake_pyatv, monkeypatch, tmp_path):
+    """pyatv gives cfg.address as an IPv4Address; saving must not crash."""
+    import ipaddress
+    import json
+    cfg = fake_pyatv.FakeConfig(name="Bedroom",
+                                address=ipaddress.IPv4Address("192.168.68.62"))
+    fake_pyatv.state["configs"] = [cfg]
+    _pair_setup(monkeypatch, tmp_path, fake_pyatv, lambda *a, **k: "1234")
+    result = hometheater.pair_apple_tv("192.168.68.62")
+    assert result["paired"] is True
+    saved = json.loads((tmp_path / "home_theater_credentials.json").read_text())
+    assert saved["192.168.68.62"]["address"] == "192.168.68.62"
+    assert saved["192.168.68.62"]["Companion"] == "fake-credentials"
+
+
+def test_device_summary_stringifies_ipaddress(fake_pyatv):
+    import ipaddress
+    import json
+    cfg = fake_pyatv.FakeConfig(address=ipaddress.IPv4Address("10.0.0.10"))
+    summary = hometheater._device_summary(cfg)
+    assert summary["address"] == "10.0.0.10"
+    json.dumps(summary)

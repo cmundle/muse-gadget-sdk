@@ -96,13 +96,14 @@ def _load_credentials() -> dict:
 
 
 def _save_credential(target: str, protocol: str, credentials: str,
-                     address: str | None = None) -> None:
+                     address=None) -> None:
     """Save pyatv pairing credentials for a target (0600, atomic write)."""
     creds = _load_credentials()
     entry = creds.get(target, {})
     entry[protocol] = credentials
     if address:
-        entry["address"] = address
+        # pyatv reports addresses as ipaddress objects; JSON needs text.
+        entry["address"] = str(address)
     creds[target] = entry
     config.save_json(_CREDENTIALS_FILE, creds)
 
@@ -187,7 +188,7 @@ def _device_summary(cfg) -> dict:
     info = cfg.device_info
     return {
         "name": cfg.name,
-        "address": cfg.address,
+        "address": str(cfg.address) if cfg.address else None,
         "model": getattr(info, "raw_model", None),
         "os": getattr(info, "operating_system", None),
         "os_version": getattr(info, "version", None),

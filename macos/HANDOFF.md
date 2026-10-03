@@ -4,7 +4,7 @@
 **Branch:** `macos-port` on `github.com/cmundle/muse-gadget-sdk` (fork of
 `facebookincubator/muse-gadget-sdk`)
 **Head:** `4b5d3dca` — "Port upstream: request text replies in send_chat"
-**Tests:** 182 passing (`python3 -m pytest` from `macos/`)
+**Tests:** 184 passing (`python3 -m pytest` from `macos/`)
 
 This is the working state for a new agent picking up the project. Read
 `AGENTS.md` first for architecture and conventions, then this file for
