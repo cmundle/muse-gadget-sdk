@@ -3,7 +3,7 @@
 **Date:** 2026-10-03
 **Branch:** `macos-port` on `github.com/cmundle/muse-gadget-sdk` (fork of
 `facebookincubator/muse-gadget-sdk`)
-**Head:** `befc2c3b` — "Retry Apple TV pairing on BackOff throttle instead of crashing"
+**Head:** `4b5d3dca` — "Port upstream: request text replies in send_chat"
 **Tests:** 174 passing (`python3 -m pytest` from `macos/`)
 
 This is the working state for a new agent picking up the project. Read
@@ -25,7 +25,10 @@ foreground flow is stable.
   peripheral, macOS config paths (`~/Library/Application Support/musegadget`),
   LaunchAgent, `platform: "macos"` / `device_family: "homehub"`.
 - Upstream sync: commit `1bf41be` (bound wait after `system.run` timeout)
-  ported with its test.
+  ported with its test; commit `b9008abb` (request `output_modality:
+  "text"` in `send_chat`, drop server TTS fetch) ported to
+  `macos/` with its test update. Other upstream commits since
+  `1bf41be` are ESP32-only (board support, camera, simulator).
 - Home-theater commands (13): `appletv.*` (remote_key, app_list,
   launch_app, text_entry, power), `homepod.*` (volume, transport, group),
   `sonos.*` (status, volume, mute, transport, group). pyatv and SoCo are
