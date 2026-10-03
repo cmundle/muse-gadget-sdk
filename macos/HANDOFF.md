@@ -80,7 +80,8 @@ credentials are per machine.
   `NotNeeded`); use `.84` for `homepod.*` commands only.
 - The bedroom Apple TV is `192.168.68.62` ("Bedroom", Apple TV 4K gen 2,
   `AppleTV11,1`, tvOS 27.0, Companion `Pairing: Mandatory`). Companion
-  pairing reaches the PIN prompt there.
+  pairing succeeded there on 2026-10-03 and the credentials are saved
+  (after fixing an `IPv4Address` JSON crash in `_save_credential`).
 - `appletv-pair` now checks the scan before pairing and stops with a clear
   message when the target doesn't offer or can't pair over the protocol.
   Ctrl-C, end of input or an empty PIN at the prompt cancel cleanly (exit
@@ -117,14 +118,19 @@ musegadget appletv-pair --target 192.168.68.62
 
 ## Suggested next steps (in order)
 
-1. Apple TV pairing: finish `appletv-pair --target 192.168.68.62` with the
-   PIN shown on the TV.
-2. Once Apple TV pairs: exercise `appletv.remote_key`, `app_list`,
+1. Apple TV is paired (.62). Exercise `appletv.remote_key`, `app_list`,
    `launch_app` against the real TV.
-3. BLE: reconfirm nRF visibility on current head, then draft the upstream
-   issue for the Muse app discovery failure.
-4. Sonos: hardware-test `sonos.*` commands where Sonos speakers are on the
+2. BLE: test whether the Muse app needs manufacturer data. CoreBluetooth
+   can only advertise a local name and service UUIDs (Apple's
+   `startAdvertising` docs), while Linux and ESP32 send company `0xFFFF`
+   plus a paired flag. Control test: an Android phone running nRF Connect's
+   Advertiser with the service UUID and name, once without and once with
+   manufacturer data `0xFFFF` / `00`. Also check whether nRF shows the
+   full `MuseGadgetXXXXXX` name (CoreBluetooth allows only 10 bytes for
+   the name in the scan response). Then draft the upstream issue (file
+   only with the owner's approval).
+3. Sonos: hardware-test `sonos.*` commands where Sonos speakers are on the
    LAN (they were not on the test network).
-5. When `pair` + `run` are stable in the foreground: load the LaunchAgent
+4. When `pair` + `run` are stable in the foreground: load the LaunchAgent
    and verify log output.
-6. ShellCheck `macos/install.sh` (never run).
+5. ShellCheck `macos/install.sh` (never run).
