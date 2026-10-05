@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 import socket
 import subprocess
@@ -50,9 +51,11 @@ def active_wifi_ssid() -> str | None:
         except (OSError, subprocess.TimeoutExpired):
             return None
         for line in out.splitlines():
+            # ACTIVE is yes or no, so the first colon ends it. In terse mode
+            # nmcli escapes the SSID's colons and backslashes with a backslash.
             active, _, ssid = line.partition(":")
             if active == "yes" and ssid:
-                return ssid.replace("\\:", ":")
+                return re.sub(r"\\(.)", r"\1", ssid)
         return None
     if shutil.which("networksetup"):
         # macOS: `networksetup -getairportnetwork en0` prints

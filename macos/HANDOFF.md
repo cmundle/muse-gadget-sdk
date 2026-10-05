@@ -1,10 +1,10 @@
 # Handoff: macOS Device SDK port
 
-**Date:** 2026-10-03
+**Date:** 2026-10-05
 **Branch:** `macos-port` on `github.com/cmundle/muse-gadget-sdk` (fork of
 `facebookincubator/muse-gadget-sdk`)
 **Head:** `4b5d3dca` — "Port upstream: request text replies in send_chat"
-**Tests:** 184 passing (`python3 -m pytest` from `macos/`)
+**Tests:** 199 passing, 1 skipped when run as root (`python3 -m pytest` from `macos/`)
 
 This is the working state for a new agent picking up the project. Read
 `AGENTS.md` first for architecture and conventions, then this file for
@@ -27,8 +27,14 @@ foreground flow is stable.
 - Upstream sync: commit `1bf41be` (bound wait after `system.run` timeout)
   ported with its test; commit `b9008abb` (request `output_modality:
   "text"` in `send_chat`, drop server TTS fetch) ported to
-  `macos/` with its test update. Other upstream commits since
-  `1bf41be` are ESP32-only (board support, camera, simulator).
+  `macos/` with its test update. On 2026-10-05, upstream Linux fixes
+  up to `74a5e2d` were ported: `f3cf874` (backoff overflow, setup
+  deadlock, PermissionError handling, output clipping, non-UTF-8 control
+  messages; its dbus.Boolean fix is Linux-only), `6e3fef8` (log how each
+  invoke ends) and the nmcli part of `719210b`. `be99e1b` (wpa_supplicant
+  fallback), `f5da932` (Linux install.sh) and `2966a7d` (Linux example
+  bridge) don't apply. Everything else upstream through `74a5e2d` is
+  ESP32-only or docs.
 - Home-theater commands (13): `appletv.*` (remote_key, app_list,
   launch_app, text_entry, power), `homepod.*` (volume, transport, group),
   `sonos.*` (status, volume, mute, transport, group). pyatv and SoCo are
