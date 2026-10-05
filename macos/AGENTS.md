@@ -118,6 +118,9 @@ State lives in `~/Library/Application Support/musegadget` (mode 0700):
 
 A healthy start logs `commands run as `, `Noise session established`,
 `sent link.register` and `registered with the Muse`.
+Each command the Muse runs logs `invoke <command>`, then how it ended, such as
+`system.run ok, exit 0 in 41 ms` or `file.read failed in 3 ms`. The log
+never has a command's parameters, output or error message.
 
 ## Pairing
 
