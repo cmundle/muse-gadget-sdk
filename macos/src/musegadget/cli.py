@@ -268,4 +268,12 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    return args.func(args)
+    try:
+        return args.func(args)
+    except PermissionError as exc:
+        # The state directory belongs to the user running the gadget, so this
+        # means it was created by another account (or with sudo): fix its
+        # ownership rather than reaching for sudo, which this port never needs.
+        print(f"Can't access {exc.filename or config.state_dir()}; check it is owned "
+              "by your user (the gadget never needs sudo).", file=sys.stderr)
+        return 1
