@@ -1,10 +1,10 @@
 # Handoff: macOS Device SDK port
 
-**Date:** 2026-10-05
+**Date:** 2026-10-07
 **Branch:** `macos-port` on `github.com/cmundle/muse-gadget-sdk` (fork of
 `facebookincubator/muse-gadget-sdk`)
 **Head:** `4b5d3dca` — "Port upstream: request text replies in send_chat"
-**Tests:** 199 passing, 1 skipped when run as root (`python3 -m pytest` from `macos/`)
+**Tests:** 200 passing, 1 skipped when run as root (`python3 -m pytest` from `macos/`)
 
 This is the working state for a new agent picking up the project. Read
 `AGENTS.md` first for architecture and conventions, then this file for
@@ -34,7 +34,10 @@ foreground flow is stable.
   invoke ends) and the nmcli part of `719210b`. `be99e1b` (wpa_supplicant
   fallback), `f5da932` (Linux install.sh) and `2966a7d` (Linux example
   bridge) don't apply. Everything else upstream through `74a5e2d` is
-  ESP32-only or docs.
+  ESP32-only or docs. On 2026-10-07, `6c33c12` (system.run waits for the
+  shell, not pipe EOF) and `b139b45` (deadline on its pipe reads) were
+  ported; the rest through `b139b45` is ESP32-only (Waveshare LCD7 board,
+  licence headers).
 - Home-theater commands (13): `appletv.*` (remote_key, app_list,
   launch_app, text_entry, power), `homepod.*` (volume, transport, group),
   `sonos.*` (status, volume, mute, transport, group). pyatv and SoCo are
